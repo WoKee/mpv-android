@@ -68,8 +68,20 @@ pattern = re.compile(
 
 text, replaced = pattern.subn(new_block, text, count=1)
 if replaced != 1:
-    print("hls_png_fix: expected probe block not found", file=sys.stderr)
-    sys.exit(1)
+    fallback_old = "        ret = av_probe_input_buffer(&pls->pb.pub, &in_fmt, url, NULL, 0, 0);"
+    fallback_new = """        ret = av_probe_input_buffer(&pls->pb.pub, &in_fmt, url, NULL, 0, 0);
+        /* HLS_PNG_FIX_FORCE_MPEGTS:
+         * Fallback for minor upstream hls.c layout differences.
+         */
+        if (ret < 0)
+            ret = 0;
+        void *iter = NULL;
+        while ((in_fmt = av_demuxer_iterate(&iter)))
+            if (strstr(in_fmt->name, "mpegts"))
+                break;
+        if (!in_fmt)
+            in_fmt = av_find_input_format("mpegts");"""
+    text = text.replace(fallback_old, fallback_new, 1)
 
 if text == orig:
     print("hls_png_fix: no changes made", file=sys.stderr)
