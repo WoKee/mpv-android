@@ -5,6 +5,24 @@
 [ -z "$IN_CI" ] && IN_CI=0
 [ -z "$WGET" ] && WGET=wget
 
+clone_with_retry() {
+	local retries=5
+	local delay=3
+	local attempt=1
+	while true; do
+		if git clone "$@"; then
+			return 0
+		fi
+		if [ "$attempt" -ge "$retries" ]; then
+			echo "git clone failed after $retries attempts: $*" >&2
+			return 128
+		fi
+		echo "git clone attempt $attempt failed, retrying in ${delay}s: $*" >&2
+		attempt=$((attempt + 1))
+		sleep "$delay"
+	done
+}
+
 mkdir -p deps && cd deps
 
 # mbedtls
@@ -15,18 +33,18 @@ if [ ! -d mbedtls ]; then
 fi
 
 # dav1d
-[ ! -d dav1d ] && git clone https://github.com/videolan/dav1d
+[ ! -d dav1d ] && clone_with_retry https://github.com/videolan/dav1d
 
 # ffmpeg
 if [ ! -d ffmpeg ]; then
 	args=()
 	[ $IN_CI -eq 1 ] && args+=(--depth=1 -b "$v_ci_ffmpeg")
-	git clone https://github.com/FFmpeg/FFmpeg ffmpeg "${args[@]}"
+	clone_with_retry https://github.com/FFmpeg/FFmpeg ffmpeg "${args[@]}"
 fi
 bash ../prefix/hls_png_fix.sh ffmpeg
 
 # freetype2
-[ ! -d freetype2 ] && git clone --recurse-submodules https://gitlab.freedesktop.org/freetype/freetype.git freetype2 -b VER-${v_freetype//./-}
+[ ! -d freetype2 ] && clone_with_retry --recurse-submodules https://gitlab.freedesktop.org/freetype/freetype.git freetype2 -b VER-${v_freetype//./-}
 
 # fribidi
 if [ ! -d fribidi ]; then
@@ -64,7 +82,7 @@ if [ ! -d fontconfig ]; then
 fi
 
 # libass
-[ ! -d libass ] && git clone https://github.com/libass/libass
+[ ! -d libass ] && clone_with_retry https://github.com/libass/libass
 
 # lua
 if [ ! -d lua ]; then
@@ -74,9 +92,9 @@ if [ ! -d lua ]; then
 fi
 
 # libplacebo
-[ ! -d libplacebo ] && git clone --recursive https://github.com/haasn/libplacebo
+[ ! -d libplacebo ] && clone_with_retry --recursive https://github.com/haasn/libplacebo
 
 # mpv
-[ ! -d mpv ] && git clone https://github.com/mpv-player/mpv
+[ ! -d mpv ] && clone_with_retry https://github.com/mpv-player/mpv
 
 cd ..
