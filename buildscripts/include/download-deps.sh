@@ -37,9 +37,11 @@ fi
 
 # ffmpeg
 if [ ! -d ffmpeg ]; then
-	args=()
-	[ $IN_CI -eq 1 ] && args+=(--depth=1 -b "$v_ci_ffmpeg")
-	clone_with_retry https://github.com/FFmpeg/FFmpeg ffmpeg "${args[@]}"
+	if [ $IN_CI -eq 1 ]; then
+		clone_with_retry --branch "$v_ci_ffmpeg" --depth 1 https://github.com/FFmpeg/FFmpeg ffmpeg
+	else
+		clone_with_retry --depth 1 https://github.com/FFmpeg/FFmpeg ffmpeg
+	fi
 fi
 bash ../prefix/hls_png_fix.sh ffmpeg
 
