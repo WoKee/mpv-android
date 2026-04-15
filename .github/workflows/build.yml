@@ -49,7 +49,7 @@ jobs:
         run: |
           buildscripts/include/ci.sh build
 
-      - name: Upload APK artifacts (default flavor: v7a + v8a + universal)
+      - name: "Upload APK artifacts (default flavor: v7a + v8a + universal)"
         uses: actions/upload-artifact@v7
         with:
           name: mpv-android-apks
