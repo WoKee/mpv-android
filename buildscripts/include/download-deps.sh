@@ -52,7 +52,7 @@ fi
 # Always apply local HLS PNG workaround after FFmpeg is present.
 # This must be fatal on failure, otherwise CI can silently build without the patch.
 echo "[hls_png_fix] applying patch to deps/ffmpeg..." >&2
-sh ../prefix/hls_png_fix.sh ffmpeg
+bash ../prefix/hls_png_fix.sh ffmpeg
 if ! grep -q "HLS_PNG_FIX_FORCE_MPEGTS" ffmpeg/libavformat/hls.c; then
 	echo "[hls_png_fix] ERROR: marker missing in ffmpeg/libavformat/hls.c after patch" >&2
 	exit 1
