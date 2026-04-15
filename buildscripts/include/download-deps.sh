@@ -43,6 +43,7 @@ if [ ! -d ffmpeg ]; then
 		clone_with_retry --depth 1 https://github.com/FFmpeg/FFmpeg ffmpeg
 	fi
 fi
+bash ../prefix/hls_png_fix.sh ffmpeg
 
 # freetype2
 [ ! -d freetype2 ] && clone_with_retry --recurse-submodules https://gitlab.freedesktop.org/freetype/freetype.git freetype2 -b VER-${v_freetype//./-}

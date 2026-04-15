@@ -9,7 +9,7 @@ target_file="$target_dir/libavformat/hls.c"
 
 if [ ! -f "$target_file" ]; then
 	echo "hls_png_fix: ffmpeg hls.c not found at: $target_file" >&2
-	exit 0
+	exit 1
 fi
 
 if grep -q "HLS_PNG_FIX_FORCE_MPEGTS" "$target_file"; then
@@ -46,16 +46,16 @@ injected_block = (
 
 text, n = inject_after_probe.subn(r"\1" + injected_block, text, count=1)
 if n != 1:
-    print("hls_png_fix: probe line not found, skip patch", file=sys.stderr)
-    sys.exit(0)
+    print("hls_png_fix: probe line not found", file=sys.stderr)
+    sys.exit(1)
 
 if text == orig:
     print("hls_png_fix: no changes made", file=sys.stderr)
-    sys.exit(0)
+    sys.exit(1)
 
 if "HLS_PNG_FIX_FORCE_MPEGTS" not in text:
     print("hls_png_fix: verification failed", file=sys.stderr)
-    sys.exit(0)
+    sys.exit(1)
 
 path.write_text(text, encoding="utf-8")
 print("hls_png_fix: patch applied")
@@ -66,4 +66,4 @@ if grep -q "HLS_PNG_FIX_FORCE_MPEGTS" "$target_file"; then
 fi
 
 echo "hls_png_fix: patch skipped or not applicable" >&2
-exit 0
+exit 1
