@@ -5,6 +5,9 @@ on:
   - pull_request
   - workflow_dispatch
 
+permissions:
+  contents: write
+
 jobs:
   linux:
     runs-on: ubuntu-24.04
@@ -46,7 +49,34 @@ jobs:
         run: |
           buildscripts/include/ci.sh build
 
-      - uses: actions/upload-artifact@v7
+      - name: Upload APK artifacts (default flavor: v7a + v8a + universal)
+        uses: actions/upload-artifact@v7
         with:
-          name: mpv-android
-          path: app/build/outputs/apk/default/debug/app-default-armeabi-v7a-debug.apk
+          name: mpv-android-apks
+          path: |
+            app/build/outputs/apk/default/debug/*.apk
+            app/build/outputs/apk/default/release/*.apk
+          if-no-files-found: error
+
+      - name: Read app versionName
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        id: appver
+        run: |
+          v=$(grep -E '^\s*versionName\s+' app/build.gradle | head -1 | sed -E "s/.*versionName\s+\"([^\"]+)\".*/\1/")
+          echo "version_name=$v" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release (master only)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ci-${{ github.run_number }}-${{ github.sha }}
+          name: "mpv-android ${{ steps.appver.outputs.version_name }} (CI #${{ github.run_number }})"
+          body: |
+            Automated build from commit `${{ github.sha }}`.
+
+            **default** flavor APKs: armeabi-v7a, arm64-v8a, and universal (debug + unsigned release).
+          files: |
+            app/build/outputs/apk/default/debug/*.apk
+            app/build/outputs/apk/default/release/*.apk
+          fail_on_unmatched_files: true
+          generate_release_notes: true
