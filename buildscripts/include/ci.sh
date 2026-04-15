@@ -75,10 +75,16 @@ else
 	exit 1
 fi
 
-msg "Building mpv"
+msg "Building mpv (armv7l)"
 ./buildall.sh -n mpv || {
 	# show logfile if configure failed
 	[ ! -f deps/mpv/_build/config.h ] && cat deps/mpv/_build/meson-logs/meson-log.txt
+	exit 1
+}
+
+msg "Building mpv (arm64 / arm64-v8a)"
+./buildall.sh --arch arm64 mpv || {
+	[ ! -f deps/mpv/_build-arm64/config.h ] && cat deps/mpv/_build-arm64/meson-logs/meson-log.txt
 	exit 1
 }
 
