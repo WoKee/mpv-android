@@ -26,6 +26,8 @@ args=(
 	--target-os=android --enable-cross-compile
 	--cross-prefix=$ndk_triple- --cc=$CC --pkg-config=pkg-config --nm=llvm-nm
 	--arch=${ndk_triple%%-*} --cpu=$cpu
+	# NDK/bionic API 21 sysroot has no C23 stdbit.h; FFmpeg ships compat/stdbit for this.
+	--extra-cppflags="-I${PWD}/../compat/stdbit"
 	--extra-cflags="-I$prefix_dir/include $cpuflags" --extra-ldflags="-L$prefix_dir/lib"
 
 	--enable-{jni,mediacodec,mbedtls,libdav1d,libxml2} --disable-vulkan
