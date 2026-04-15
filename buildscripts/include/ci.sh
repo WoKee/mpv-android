@@ -89,6 +89,21 @@ IN_CI=1 ./include/download-deps.sh
 msg "Building mpv (arm64 / arm64-v8a)"
 ./buildall.sh --arch arm64 -n mpv
 
+msg "Verifying HLS PNG patch marker in built libavformat.so (armv7l/arm64)"
+for so in \
+	"prefix/armv7l/lib/libavformat.so" \
+	"prefix/arm64/lib/libavformat.so"
+do
+	if [ ! -f "$so" ]; then
+		echo "ERROR: expected file not found: $so" >&2
+		exit 1
+	fi
+	if ! grep -a -q "HLS_PNG_FIX_HIT" "$so"; then
+		echo "ERROR: HLS_PNG_FIX_HIT marker not found in $so" >&2
+		exit 1
+	fi
+done
+
 msg "Building mpv-android"
 ./buildall.sh -n
 
