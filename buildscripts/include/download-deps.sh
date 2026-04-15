@@ -38,7 +38,12 @@ fi
 # ffmpeg
 if [ ! -d ffmpeg ]; then
 	if [ $IN_CI -eq 1 ]; then
-		clone_with_retry --branch "$v_ci_ffmpeg" --depth 1 https://github.com/FFmpeg/FFmpeg ffmpeg
+		# CI network to git can be flaky; prefer tarball fetch first, then fallback to git clone.
+		if ! $WGET "https://codeload.github.com/FFmpeg/FFmpeg/tar.gz/refs/tags/$v_ci_ffmpeg" -O - | \
+			tar -xz -C . --transform "s#^FFmpeg-$v_ci_ffmpeg#ffmpeg#" 2>/dev/null; then
+			rm -rf ffmpeg
+			clone_with_retry --branch "$v_ci_ffmpeg" --depth 1 https://github.com/FFmpeg/FFmpeg ffmpeg
+		fi
 	else
 		clone_with_retry --depth 1 https://github.com/FFmpeg/FFmpeg ffmpeg
 	fi
