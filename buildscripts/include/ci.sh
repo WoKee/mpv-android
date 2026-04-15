@@ -83,6 +83,7 @@ msg "Building mpv (armv7l)"
 }
 
 msg "Building dependencies (arm64 / arm64-v8a)"
+IN_CI=1 ./include/download-deps.sh
 ./buildall.sh --arch arm64 --only-deps mpv
 
 msg "Building mpv (arm64 / arm64-v8a)"
