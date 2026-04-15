@@ -82,11 +82,11 @@ msg "Building mpv (armv7l)"
 	exit 1
 }
 
+msg "Building dependencies (arm64 / arm64-v8a)"
+./buildall.sh --arch arm64 --only-deps mpv
+
 msg "Building mpv (arm64 / arm64-v8a)"
-./buildall.sh --arch arm64 mpv || {
-	[ ! -f deps/mpv/_build-arm64/config.h ] && cat deps/mpv/_build-arm64/meson-logs/meson-log.txt
-	exit 1
-}
+./buildall.sh --arch arm64 -n mpv
 
 msg "Building mpv-android"
 ./buildall.sh -n
