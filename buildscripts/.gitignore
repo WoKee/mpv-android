@@ -4,6 +4,6 @@ prefix
 !prefix/
 prefix/*
 !prefix/hls_png_fix.sh
-!prefix/hls_png_fix.py
+!prefix/hls_png_fix.patch
 prefix64
 *.tgz

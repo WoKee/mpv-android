@@ -4,7 +4,7 @@
 # Usage:
 #   hls_png_fix.sh [path-to-ffmpeg-source]
 #
-# Python logic lives in hls_png_fix.py so CRLF in this shell script cannot break a heredoc.
+# Apply a unified diff patch file (no Python dependency).
 # Build-time logs go to stderr with prefix [hls_png_fix].
 # Runtime logs use both AV_LOG_VERBOSE and AV_LOG_WARNING for visibility.
 
@@ -36,39 +36,21 @@ else
 	log "WARN: expected av_probe_input_buffer anchor string not found verbatim; patch may still match with regex"
 fi
 
-# Pick a real Python 3. Skip Windows "python3" under WindowsApps (often a store stub that exits 49).
-pick_python() {
-	local c path
-	for c in python3 python; do
-		path="$(command -v "$c" 2>/dev/null)" || continue
-		case "$path" in
-			*[/\\]WindowsApps[/\\]* | *[/\\]windowsapps[/\\]*) continue ;;
-		esac
-		if ! "$c" -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 6) else 1)" >/dev/null 2>&1; then
-			continue
-		fi
-		printf '%s\n' "$c"
-		return 0
-	done
-	return 1
-}
-
-if ! PY="$(pick_python)"; then
-	log "ERROR: no usable Python 3.6+ found (python3/python); avoid WindowsApps python stubs"
+patch_file="$here/hls_png_fix.patch"
+if [ ! -f "$patch_file" ]; then
+	log "ERROR: patch file not found at $patch_file"
 	exit 1
 fi
 
-log "running python rewrite ($PY)..."
+if ! command -v patch >/dev/null 2>&1; then
+	log "ERROR: 'patch' command not found in PATH"
+	exit 1
+fi
 
-export HLS_PNG_FIX_TARGET_FILE="$target_file"
-"$PY" "$here/hls_png_fix.py"
-py_status=$?
-unset HLS_PNG_FIX_TARGET_FILE
+log "applying patch file ($(basename "$patch_file"))..."
 
-log "python finished exit=$py_status"
-
-if [ "$py_status" -ne 0 ]; then
-	log "ERROR: python patch failed (exit $py_status)"
+if ! (cd "$target_dir" && patch -p1 --forward --binary <"$patch_file"); then
+	log "ERROR: patch command failed"
 	exit 1
 fi
 
@@ -77,5 +59,5 @@ if grep -q "HLS_PNG_FIX_FORCE_MPEGTS" "$target_file"; then
 	exit 0
 fi
 
-log "ERROR: marker missing after python (unexpected)"
+log "ERROR: marker missing after patch apply (unexpected)"
 exit 1

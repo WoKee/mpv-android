@@ -1,0 +1,24 @@
+--- a/libavformat/hls.c
++++ b/libavformat/hls.c
+@@ -2325,6 +2325,21 @@
+             url = av_strdup(pls->segments[0]->url);
+             ret = av_probe_input_buffer(&pls->pb.pub, &in_fmt, url, NULL, 0, 0);
+ 
++            /* HLS_PNG_FIX_FORCE_MPEGTS: force mpegts demuxer for TS disguised as PNG */
++            av_log(s, AV_LOG_WARNING, "HLS_PNG_FIX_HIT: forcing mpegts after probe ret=%d\n", ret);
++            av_log(s, AV_LOG_VERBOSE, "HLS_PNG_FIX: after av_probe_input_buffer ret=%d, forcing mpegts demuxer (no PNG header stripping)\n", ret);
++            if (ret < 0)
++                ret = 0;
++            void *iter = NULL;
++            while ((in_fmt = av_demuxer_iterate(&iter)))
++                if (strstr(in_fmt->name, "mpegts"))
++                    break;
++            if (!in_fmt)
++                in_fmt = av_find_input_format("mpegts");
++            av_log(s, AV_LOG_WARNING, "HLS_PNG_FIX_HIT: selected sub-demuxer '%s'\n",
++                   in_fmt && in_fmt->name ? in_fmt->name : "(null)");
++            av_log(s, AV_LOG_VERBOSE, "HLS_PNG_FIX: selected sub-demuxer '%s'\n",
++                   in_fmt && in_fmt->name ? in_fmt->name : "(null)");
+             for (int n = 0; n < pls->n_segments; n++)
+                 if (ret >= 0)
+                     ret = test_segment(s, in_fmt, pls, pls->segments[n]);
