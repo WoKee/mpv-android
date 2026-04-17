@@ -1,11 +1,12 @@
 --- a/libavformat/mpegts.c
 +++ b/libavformat/mpegts.c
-@@ -3251,9 +3251,47 @@
+@@ -3251,9 +3251,88 @@
      return ret;
  }
  
 +/* MPEGTS_PROBE_SKIP_PNG: skip leading PNG (wrapper) before TS probe; bounded parse */
 +#define MPEGTS_PROBE_SKIP_PNG_MAX 262144
++#define MPEGTS_PROBE_FIND_SYNC_MAX 65536
 +
 +static int mpegts_probe_skip_png_prefix(const uint8_t *buf, int size)
 +{
@@ -34,22 +35,76 @@
 +    return 0;
 +}
 +
++/* Some anti-crawler variants append junk bytes after IEND, then TS packets. */
++static int mpegts_probe_sync_score(const uint8_t *buf, int size, int off, int step)
++{
++    int hits = 0, checks = 0, n;
++
++    for (n = 0; n < 8; n++) {
++        int pos = off + n * step;
++        if (pos >= size)
++            break;
++        checks++;
++        if (buf[pos] == 0x47)
++            hits++;
++    }
++
++    if (checks < 4)
++        return 0;
++    return hits * 10 / checks;
++}
++
++static int mpegts_probe_find_ts_sync(const uint8_t *buf, int size)
++{
++    int scan, off;
++    int best_off = 0, best_score = 0;
++
++    if (!buf || size < TS_PACKET_SIZE * 4)
++        return 0;
++
++    scan = FFMIN(size, MPEGTS_PROBE_FIND_SYNC_MAX);
++    for (off = 0; off + TS_PACKET_SIZE * 3 < scan; off++) {
++        int score;
++        if (buf[off] != 0x47)
++            continue;
++
++        score = FFMAX3(
++            mpegts_probe_sync_score(buf, scan, off, TS_PACKET_SIZE),
++            mpegts_probe_sync_score(buf, scan, off, TS_DVHS_PACKET_SIZE),
++            mpegts_probe_sync_score(buf, scan, off, TS_FEC_PACKET_SIZE)
++        );
++        if (score > best_score) {
++            best_score = score;
++            best_off = off;
++        }
++        if (score >= 8)
++            return off;
++    }
++
++    return best_score >= 7 ? best_off : 0;
++}
++
  static int mpegts_probe(const AVProbeData *p)
  {
 -    const int size = p->buf_size;
 +    const uint8_t *buf = p->buf;
 +    int size = p->buf_size;
 +    int skip = mpegts_probe_skip_png_prefix(buf, size);
++    int sync = 0;
 +
 +    if (skip > 0 && skip < size) {
 +        buf += skip;
 +        size -= skip;
 +    }
-+
++    sync = mpegts_probe_find_ts_sync(buf, size);
++    if (sync > 0 && sync < size) {
++        buf += sync;
++        size -= sync;
++    }
+ 
      int maxscore = 0;
      int sumscore = 0;
-     int i;
-@@ -3266,9 +3304,9 @@
+@@ -3266,9 +3345,9 @@
  
      for (i = 0; i<check_count; i+=CHECK_BLOCK) {
          int left = FFMIN(check_count - i, CHECK_BLOCK);
