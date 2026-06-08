@@ -38,6 +38,11 @@ fi
 PREFIX32="$prefix32" PREFIX64="$prefix64" PREFIX_X64="$prefix_x64" PREFIX_X86="$prefix_x86" \
 ndk-build -C app/src/main -j$cores
 
+if [ -n "$MPV_ANDROID_NATIVE_ONLY" ]; then
+	echo "Skipping Gradle APK build because MPV_ANDROID_NATIVE_ONLY is set."
+	exit 0
+fi
+
 ### Java parts
 targets=(assembleDebug)
 if [ -z "$DONT_BUILD_RELEASE" ]; then
