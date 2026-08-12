@@ -38,19 +38,10 @@ fi
 # ffmpeg
 if [ ! -d ffmpeg ]; then
 	if [ $IN_CI -eq 1 ]; then
-		clone_with_retry --branch "$v_ci_ffmpeg" --depth 1 https://github.com/FFmpeg/FFmpeg ffmpeg
+		clone_with_retry --branch "$v_ci_ffmpeg" --depth 1 https://github.com/WoKee/FFmpeg ffmpeg
 	else
-		clone_with_retry --depth 1 https://github.com/FFmpeg/FFmpeg ffmpeg
+		clone_with_retry --branch release-9.0-fongmi --depth 1 https://github.com/WoKee/FFmpeg ffmpeg
 	fi
-fi
-
-# HLS PNG workaround: must run whenever ffmpeg tree exists (fatal if patch fails).
-echo "[hls_png_fix] applying patch..." >&2
-bash ../prefix/hls_png_fix.sh ffmpeg
-if ! grep -q "HLS_PNG_FIX_FORCE_MPEGTS" ffmpeg/libavformat/hls.c || \
-   ! grep -q "MPEGTS_PROBE_SKIP_PNG" ffmpeg/libavformat/mpegts.c; then
-	echo "[hls_png_fix] ERROR: patch marker missing in ffmpeg/libavformat/hls.c or mpegts.c" >&2
-	exit 1
 fi
 
 # freetype2
