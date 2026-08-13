@@ -83,6 +83,22 @@ msg "Building mpv (armv7l)"
 	exit 1
 }
 
+# Ensure FFmpeg public headers are available inside prefix for external consumers
+# (e.g. Media3 shared-library linking). On cache restore the deps/ source tree
+# may not exist, so only copy when present.
+if [ -d deps/ffmpeg/libavutil ] && [ ! -d prefix/include ]; then
+	msg "Copying FFmpeg headers into prefix/include"
+	mkdir -p prefix/include
+	cp -r deps/ffmpeg/libavutil prefix/include/
+	cp -r deps/ffmpeg/libavcodec prefix/include/
+	cp -r deps/ffmpeg/libavformat prefix/include/
+	cp -r deps/ffmpeg/libswresample prefix/include/
+	cp deps/ffmpeg/config.h prefix/include/ 2>/dev/null || true
+	cp deps/ffmpeg/config_components.h prefix/include/ 2>/dev/null || true
+	[ -f deps/ffmpeg/libavutil/ffversion.h ] && \
+		cp deps/ffmpeg/libavutil/ffversion.h prefix/include/libavutil/
+fi
+
 msg "Building dependencies (arm64 / arm64-v8a)"
 ./buildall.sh --arch arm64 --only-deps mpv
 
